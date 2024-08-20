@@ -1,93 +1,119 @@
-// 1. select #message and change innerText to “X” turn
-const message = document.getElementById("message");
-message.innerText = "X";
+// Requirements:
+// Display an empty tic-tac-toe board when the page is initially displayed.
+// A player can click on the nine cells to make a move.
+// Every click will alternate between marking an X and O.
+// Display whose turn it is (X or O).
+// The cell cannot be played again once occupied with an X or O.
+// Provide win logic and display a winning message.
+// Provide logic for a cat’s game (tie), also displaying a message.
+// Provide a Reset Game button that will clear the contents of the board.
 
-let gameBoard = {};
-const winningConditions = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+//1) Define the required variables used to track the state of the game.
+let board;
+let turn;
+let winner;
+let tie;
 
-let moves = 0;
+//2) Store cached element references.
+const squareEls = document.querySelectorAll(".sqr")
+const messageEl = document.getElementById("message")
 
-// 2. assign a addEventListener to each sqr, event type “click”, all 9 sqrs using the same callback func, pass in e.target.innerText
-const squares = document.querySelectorAll(".sqr")
+const winningCombos = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
-function handleClick(e) {
+//3) Upon loading, the game state should be initialized, and a function should 
+//   be called to render this game state.
+function init() {
+    board = ["", "", "", "", "", "", "", "", ""]
+    turn = "X"
+    winner = false;
+    tie = false;
 
-    // 3. in the onclick listener callback, check if the sqr has been occupied, if true, return, else change innertext content
-    // 4. change innertext content to message.innertext
-    const square = e.target;
+    render();
+}
+init()
 
-    if (square.innerText === "") {
-        square.innerText = message.innerText;
-        gameBoard[square.id] = square.innerText;
-        moves++;
-        const isOver = isGameOver();
-
-        if (isOver) {
-            if (message.innerText.includes("XO draw!")) {
-                return;
-            }
-            message.innerText = square.innerText + " wins!"
-        } else {
-            toggleTurn();
-        }
-
-
+//4) The state of the game should be rendered to the user.
+function updateMessage() {
+    if (winner === false && tie === false) {
+        messageEl.innerText = turn
+    } else if (winner === false && tie === true) {
+        messageEl.innerText = "It's a tie"
     } else {
+        messageEl.innerText = `Congrats! ${turn} wins`
+    }
+}
+
+function updateBoard() {
+    board.forEach(function (cell, idx) {
+        squareEls[idx].innerText = cell;
+    })
+}
+
+function render() {
+    updateBoard();
+    updateMessage();
+}
+
+function placePiece(idx) {
+    board[idx] = turn;
+}
+
+function checkForWinner() {
+
+    winningCombos.forEach((combo) => {
+        const [idx1, idx2, idx3] = combo;
+
+        if (board[idx1] === "") {
+            return;
+        } else if (board[idx1] === board[idx2] && board[idx1] === board[idx3]) {
+            winner = true
+        }
+    })
+}
+
+function checkForTie() {
+    if (winner) {
         return;
     }
 
-    // 5. in  eventlistener callback, check if game is over, create a func to do this it should be in global, this func return a boolean value indicating whether the game is over
-
+    tie = board.every((cell) => (cell !== ""))
 }
 
-squares.forEach((square) => square.addEventListener("click", handleClick))
+function switchPlayerTurn() {
+    if (winner) return;
 
-// 6. if game is over, show winner in #message, and return. Otherwise, do toggleturn func (Do this at last)
-function isGameOver() {
-    for (let i = 0; i < winningConditions.length; i++) {
-        const [first, second, third] = winningConditions[i];
-
-        if (gameBoard[first] && gameBoard[first] === gameBoard[second] && gameBoard[second] === gameBoard[third]) {
-            return true;
-        }
-    }
-
-    // tie
-    if (moves >= 9) {
-        message.innerText = "XO draw!"
-        return true;
-    }
-
-    return false;
-}
-
-// 7. In global, create a toggleTurn func, no param, check if message.innerText === “X”, overwrite it with “O”, vice versa. In the onclick listener callback, call this toggleTurn func if sqr is available
-function toggleTurn() {
-    if (message.innerText === "X") {
-        message.innerText = "O"
+    if (turn === "X") {
+        turn = "O"
     } else {
-        message.innerText = "X"
+        turn = "X"
     }
 }
 
-//8. Add a “Reset Game” btn at the end of <body>, addEventListener, “click” event, callback func. query select all the sqrs and set their innertext = “”, and change #message innerText to “X” turn
-const resetButton = document.createElement("button");
+//5) Define the required constants.
+//6) Handle a player clicking a square with a `handleClick` function.
+function handleClick(e) {
+    const squareIndex = e.target.id;
 
-resetButton.innerText = "Restart Game";
-resetButton.style.backgroundColor = "black";
-resetButton.style.color = "gainsboro";
-resetButton.style.marginTop = "12px";
+    if (board[squareIndex]) {
+        return;
+    }
 
-document.body.appendChild(resetButton);
+    if (winner) {
+        return;
+    }
 
-function handleResetBtnClick() {
-    squares.forEach((square) => {
-        square.innerText = "";
-    });
+    placePiece(squareIndex);
+    checkForWinner();
+    checkForTie();
+    switchPlayerTurn();
 
-    message.innerText = "X";
-    gameBoard = {};
-    moves = 0;
+    render();
 }
 
-resetButton.addEventListener("click", handleResetBtnClick)
+squareEls.forEach((square) => {
+    square.addEventListener("click", handleClick)
+})
+
+//7) Create Reset functionality.
+const resetBtnEl = document.getElementById("reset");
+resetBtnEl.addEventListener("click", init)
